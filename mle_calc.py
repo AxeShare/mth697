@@ -52,13 +52,13 @@ def f2(z):
     return f
 
 #print(f2([2.001,435.18]))
-''' 
+
 z = fsolve(f2,[1.0, 1.0])   #initial guess
 a = 'q'
 b = 'lambda'
 c = 'tau'
 print('%s        %s     %s \n%f %f %f' % (a,b,c, q, z[0], z[1]))
-'''
+
 
 
         
