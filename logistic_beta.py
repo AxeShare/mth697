@@ -7,23 +7,37 @@ Created on Wed Nov  4 11:21:46 2020
 
 import numpy as np
 import sympy as sym
+from scipy.special import expit
 
 #from scipy.optimize import fsolve
 
-W = np.array([0, 0, 253, 490, 714, 992, 1236, 1472, 1739, 1923, 2290, 2541, 2844, 3076, 3245, 3571, 3825, 4219, 4349, 4672])
-Z = np.array([1, 486, 968, 1445, 1971, 2498, 2982, 3570, 3997, 4589, 5161, 5658, 6161, 6569, 7168, 7726, 8314, 8718, 9210, 9416])
+W = np.array([94,130,125,88,79,53,40,54,51,52,22,25,44,47,42,26,38,36,9,25,18,20,23,19,13,17,15,17,21,26,17,22,24,21,31,20,17,14,15,13,21,19])
+Z = np.array([299,261,197,160,115,98,110,103,97,61,73,88,92,82,68,73,63,38,46,44,47,46,34,31,30,31,42,43,49,47,53,52,47,60,43,33,26,30,31,39,35,36])
 
 W = W.astype(np.float64)
 Z = Z.astype(np.float64)
 
 X = np.random.rand(6,20) #We have to use actual covariate values instead of this random uniform matrix
-X[1:] = 1.0
+#X[1:] = 1.0
+tau = 6.10   #q = 0.45, lambda = 1.5
+
+print(X[5:])
 
 def eta(X,beta,j):
     p = 0
     for i in range(6):
         p = p + X[i,j]*beta[i]
+        p = expit(p)
     return 1.0/(1.0 + np.exp(-1*p))
+
+def aux(X,vec,j):
+    p = 0
+    for i in range(6):
+        p = p + X[i,j]*vec[i]
+        p = expit(p)
+    return np.exp(p)
+
+
 u = np.zeros((20,1))
 D = np.zeros((20,6))
 
@@ -36,10 +50,6 @@ while True:
         for j in range(6):
             D[i,j] = -1*X[j,i]*(eta(X,beta,i)**2)
 
-    '''
-    for i in range(20):
-        u[i] = -1*Z[i]/eta(X,beta,i)
-    '''
     
     u[19] = -1*Z[19]/eta(X,beta,19)
 
@@ -70,7 +80,8 @@ while True:
     res = beta - beta1
 
     itern += 1
-    tol = 0.01
+    print(beta)
+    tol = 5
     if ((np.abs(res) < tol).all()):
         print(beta)
         print(itern)
@@ -80,18 +91,36 @@ while True:
     if itern == 1500:
         print("Did not converge")
         break
-    #print("iteration starts")
-    #print(beta)
-    #print(beta1)
-    #print(res)
-    #print("iteration ends")
 
- 
-'''
-u[19] = -1*Z[18]/eta(X,beta,19)
-
-for i in range(19):
-    u[i] = -1*Z[i]/eta(X,beta,i+1)
-'''
-
+def likelihood(alpha):
     
+    a = 0
+    for j in range(20):
+        p = 0
+        for i in range(6):
+            p += X[i,j]*beta[i]
+            p = W[j]*p
+            a += p
+    
+    b = 0
+    for j in range(1,20):
+        p = 0
+        for i in range(6):
+            p += X[i,j]*beta[i]
+            p = expit(p)
+            p = Z[j-1]*np.log(1+np.exp(p))
+            p = expit(p)
+            b += p
+
+    c = 0
+    for j in range(1,20):
+        c += Z[j]*np.log(aux(X,alpha,j)*Z[j-1]-W[j] + tau)
+        
+    d = 0
+    for j in range(1,20):
+        d += aux(X,alpha,j)*(Z[j-1] - W[j])
+        
+    l = a - b + c - d - 20*tau
+    return l
+
+U = np.zeros((1,6))
